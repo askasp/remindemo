@@ -5,9 +5,11 @@ defmodule RemindemoWeb.PageLive do
 
   def mount(_, params, socket) do
 		shared_counter_value = GenServer.call(Remindemo.SharedCounter, :get)
+
+		reader_count = init_presence(socket)
     {:ok,
      assign(socket,
-       reader_count: init_presence(socket),
+       reader_count: reader_count,
        personal_counter: 0,
        semi_shared_counter: 0,
        shared_counter: shared_counter_value
@@ -16,6 +18,7 @@ defmodule RemindemoWeb.PageLive do
 
   # Presence logic
   def handle_info(%{event: "presence_diff", payload: %{joins: joins, leaves: leaves}}, socket) do
+    IO.inspect "received prsence diff"
     reader_count = socket.assigns.reader_count + map_size(joins) - map_size(leaves)
     {:noreply, assign(socket, :reader_count, reader_count)}
   end
@@ -111,6 +114,7 @@ defmodule RemindemoWeb.PageLive do
     )
 
     Phoenix.PubSub.subscribe(Remindemo.PubSub, @counter_topic)
+    RemindemoWeb.Endpoint.subscribe(@presence_topic)
 
     Remindemo.Presence.list(@presence_topic)
     |> Map.keys()
